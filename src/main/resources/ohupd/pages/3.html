@@ -10,49 +10,52 @@
 </head>
 <body>
     <h1>转载</h1>
-    <h2>视频信息</h2>
+    <h2>登录ottohub</h2>
+    <h3></h3><button id="next">下一步</button>
     <hr>
-    标题:<span id="title">LOADING...</span><br>
-    av号:<span id="avid">LOADING...</span><br>
-    up主:<a target="_blank" id="up">LOADING...</a><br>
-    <label for="desc">简介:</label><br><textarea rows="12" cols="70" disabled="disabled" id="desc">LOADING...</textarea><br>
-    封面:<br><img id="pic" alt="pic" style="max-width: 700px; overflow-clip-margin: content-box; overflow: clip;"><br>
-    <hr>
-    <h2>选择分集</h2>
-    <div id="parts"></div>
-    <br>
-    <button id="next">下一步</button>
+    <input type="text" id="un" placeholder="账号"><br>
+    <input type="text" id="pw" placeholder="密码"><br>
+    <button id="login">登录</button><button id="logout">退出</button><br>
     <script>
         function getQueryParam(key) {
             return new URLSearchParams(window.location.search).get(key);
         }
+        var oa = app.userData.data.ottohub_account;
+        if (typeof oa == 'undefined'){
+            $("h3").text("未登录");
+        }else{
+            $("h3").text("已经登录");
+        }
 
-        var data = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/vidinfo.json?type=${getQueryParam("type")}&vid=${getQueryParam("vid")}`,""));
-        $("#title").text(data.data.title);
-        $("#avid").text(data.data.aid);
-        $("#desc").val(data.data.desc);
-        $("#pic").attr("src",data.data.pic);
-        $("#up").attr("href","https://space.bilibili.com/"+data.data.owner.mid);
-        $("#up").text(data.data.owner.name);
-        $.each(data.data.pages, function(index,value) {
-            $("#parts").append(`
-                <label>
-                    <input type="radio" class="vpart" name="vpart" select value="${value.cid}"> ${value.part}
-                </label><br>
-            `);
+        $("#login").click(function(){
+            var data = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/login.json?act=login&un=${$("#un").val()}&pw=${$("#pw").val()}`,""));
+            Swal.fire({
+                title: data.status,
+                text: data.msg,
+                icon: data.status
+            })
+            if (data.status=="error") return;
+            if (data.status=="success") {
+                parent.app.getUserData();
+                window.location.reload();
+            }
+        });
+        $("#logout").click(function(){
+            var data = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/login.json?act=logout`,""));
+            parent.app.getUserData();
+            window.location.reload();
+
         });
         $("#next").click(function(){
-            var selectedValue = $("input[name='vpart']:checked").val();
-            console.log(selectedValue);
-            if ( typeof selectedValue == "undefined"){
+            if (typeof oa == 'undefined'){
                 Swal.fire({
-                    title: "ERROR",
-                    text: "没选分集",
-                    icon: "error"
+                    title: 'error',
+                    text: '还没登录',
+                    icon: 'error'
                 });
                 return;
             }
-            window.location.href=`3.html?cid=${selectedValue}&aid=${data.data.aid}`;
+            window.location.href=`4.html?cid=${getQueryParam("cid")}&aid=${getQueryParam("aid")}`;
         });
     </script>
 </body>

@@ -9,41 +9,50 @@
     <script src="../../webui/assets/page.js"></script>
 </head>
 <body>
-    <h1>ottohub转载</h1>
+    <h1>转载</h1>
+    <h2>视频信息</h2>
     <hr>
-    <label>
-        二选一
-        <br>
-        <input type="text" id="bvid" placeholder="bv号(BV...)"><br>
-        <input type="text" id="avid" placeholder="av号(AV...)"><br>
-        <button id="next">下一步</button>
-    </label>
+    标题:<span id="title">LOADING...</span><br>
+    av号:<span id="avid">LOADING...</span><br>
+    up主:<a target="_blank" id="up">LOADING...</a><br>
+    <label for="desc">简介:</label><br><textarea rows="12" cols="70" disabled="disabled" id="desc">LOADING...</textarea><br>
+    封面:<br><img id="pic" alt="pic" style="max-width: 700px; overflow-clip-margin: content-box; overflow: clip;"><br>
+    <hr>
+    <h2>选择分集</h2>
+    <div id="parts"></div>
+    <br>
+    <button id="next">下一步</button>
     <script>
+        function getQueryParam(key) {
+            return new URLSearchParams(window.location.search).get(key);
+        }
+
+        var data = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/vidinfo.json?type=${getQueryParam("type")}&vid=${getQueryParam("vid")}`,""));
+        $("#title").text(data.data.title);
+        $("#avid").text(data.data.aid);
+        $("#desc").val(data.data.desc);
+        $("#pic").attr("src",data.data.pic);
+        $("#up").attr("href","https://space.bilibili.com/"+data.data.owner.mid);
+        $("#up").text(data.data.owner.name);
+        $.each(data.data.pages, function(index,value) {
+            $("#parts").append(`
+                <label>
+                    <input type="radio" class="vpart" name="vpart" select value="${value.cid}"> ${value.part}
+                </label><br>
+            `);
+        });
         $("#next").click(function(){
-            var bvid = $("#bvid").val();
-            var avid = $("#avid").val();
-            var type="";
-            var vid="";
-            if (avid!=""){
-                console.log("av");
-                type="av";
-                vid=avid;
-            } else if(bvid!=""){
-                console.log("bv");
-                type="bv";
-                vid=bvid;
-            }else{
+            var selectedValue = $("input[name='vpart']:checked").val();
+            console.log(selectedValue);
+            if ( typeof selectedValue == "undefined"){
                 Swal.fire({
                     title: "ERROR",
-                    text: "二选一",
+                    text: "没选分集",
                     icon: "error"
                 });
                 return;
             }
-            if(vid.toLowerCase().startsWith("av")||vid.toLowerCase().startsWith("bv")){
-                vid=vid.substring(2);
-            }
-            window.location.href=`2.html?type=${type}&vid=${vid}`;
+            window.location.href=`3.html?cid=${selectedValue}&aid=${data.data.aid}`;
         });
     </script>
 </body>

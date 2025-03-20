@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="../../webui/assets/jquery-3.7.1.min.js"></script>
+    <script src="../../webui/assets/sweetalert2.js"></script>
+    <script src="../../webui/assets/app.js"></script>
+    <script src="../../webui/assets/page.js"></script>
+</head>
+<body>
+    <h1>转载</h1>
+    <hr>
+    <label>
+        二选一
+        <br>
+        <input type="text" id="bvid" placeholder="bv号(BV...)"><br>
+        <input type="text" id="avid" placeholder="av号(AV...)"><br>
+        <button id="next">下一步</button>
+    </label>
+    <script>
+        $("#next").click(function(){
+            var bvid = $("#bvid").val();
+            var avid = $("#avid").val();
+            var type="";
+            var vid="";
+            if (avid!=""){
+                console.log("av");
+                type="av";
+                vid=avid;
+            } else if(bvid!=""){
+                console.log("bv");
+                type="bv";
+                vid=bvid;
+            }else{
+                Swal.fire({
+                    title: "ERROR",
+                    text: "二选一",
+                    icon: "error"
+                });
+                return;
+            }
+            if(vid.toLowerCase().startsWith("av")||vid.toLowerCase().startsWith("bv")){
+                vid=vid.substring(2);
+            }
+            window.location.href=`2.html?type=${type}&vid=${vid}`;
+        });
+    </script>
+</body>
+</html>

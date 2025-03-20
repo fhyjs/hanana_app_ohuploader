@@ -6,10 +6,40 @@ group = 'org.eu.hanana.reimu.app.webui.ohuploader'
 version = '1.0-SNAPSHOT'
 
 repositories {
+    maven {
+        url 'https://maven.aliyun.com/repository/public/'
+    }
     mavenCentral()
+    gradlePluginPortal()
+    maven {
+        url "https://maven.fabricmc.net/"
+    }
+    maven {
+        url 'https://maven.hanana2.link:2053/releases'
+    }
+    maven {
+        url 'https://repo.repsy.io/mvn/fhyjs/jsatori'
+    }
 }
-
+task copyDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into "$buildDir/libs/dependencies"
+}
 dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
+
+    implementation 'org.projectlombok:lombok:1.18.30' // 请使用最新版本
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.17.2' // 用实际的Log4j版本替代 x.x
+    implementation 'org.apache.logging.log4j:log4j-core:2.17.2'
+    implementation 'io.netty:netty-all:4.2.0.RC2'
+    implementation 'io.netty.incubator:netty-incubator-codec-http3:0.0.28.Final'
+    implementation 'io.projectreactor.netty:reactor-netty:1.2.2'
+    compileOnly "org.eu.hanana.reimu.webui:webui:1.0.6"
+    implementation "org.eu.hanana.reimu.hnn.neoloader:hanana-neoloader:1.0-SNAPSHOT"
+    implementation "org.eu.hanana.reimu.hnnapp:app:1.0.1"
+    compileOnly "org.eu.hanana.reimu.app.mod.webui:app_webui:1.0.3"
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
