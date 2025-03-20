@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Main" type="Application" factoryName="Application" nameIsGenerated="true">
+    <option name="ALTERNATIVE_JRE_PATH" value="graalvm-ce-21" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <option name="MAIN_CLASS_NAME" value="org.eu.hanana.reimu.hnn.neoloader.Main" />
+    <module name="hanana_app_ohuploader.main" />
+    <option name="PROGRAM_PARAMETERS" value="/no-server --appjar &quot;D:\proj\hanana_app\build\libs\hanana_app-1.0-SNAPSHOT-all.jar&quot; /no-jna /server --extra-mods ../build/classes/java/main/" />
+    <option name="VM_PARAMETERS" value="-Djava.awt.headless=true -Dfabric.development=true -Dfabric.debug.disableClassPathIsolation=true" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
