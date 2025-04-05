@@ -210,27 +210,28 @@ public class DownloadVideoHandler extends AbstractPathHandler {
                     for (String tag : tags) {
                         tagstr.append("#").append(tag);
                     }
+                    JsonObject asJsonObject = user.data.get("ottohub_account").getAsJsonObject();
                     // 构造 Multipart 表单
                     MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
                             .setType(MultipartBody.FORM)
                             .addFormDataPart("title", title)
                             .addFormDataPart("intro", desc)
+                            .addFormDataPart("token", asJsonObject.get("token").getAsString())
                             .addFormDataPart("type", right)
-                            .addFormDataPart("action", "send_video")
+                            .addFormDataPart("action", "submit_video")
                             .addFormDataPart("category", type)
                             .addFormDataPart("tag", tagstr.toString());
                     multipartBuilder.addFormDataPart("file_jpg", Util.generateRandomString(10)+".jpg", RequestBody.create(picImage.toByteArray(), MediaType.get("image/jpeg")));
                     multipartBuilder.addFormDataPart("file_mp4", Util.generateRandomString(10)+".mp4", RequestBody.create(file, MediaType.get("video/mp4")));
 
                     RequestBody requestBody = multipartBuilder.build();
-                    JsonObject asJsonObject = user.data.get("ottohub_account").getAsJsonObject();
                     ProgressedRequestBody requestBody1 = null;
                     // 构造请求
                     Request okHrequest = new Request.Builder()
                             .url(ConfigCore.Config.upload_backend)
                             .post(requestBody1=new ProgressedRequestBody(requestBody,(written, length, progress) -> {}))
 
-                            .addHeader("Cookie", String.format("login_token=%s; PHPSESSID=%s",asJsonObject.get("token").getAsString(),asJsonObject.get("PHPSESSID").getAsString())) // 替换为实际 token
+                            //.addHeader("Cookie", String.format("login_token=%s; PHPSESSID=%s",asJsonObject.get("token").getAsString(),asJsonObject.get("PHPSESSID").getAsString())) // 替换为实际 token
                             .build();
                     ProgressedRequestBody finalRequestBody = requestBody1;
                     Thread listener = new TimerLoopThread<>(new AtomicReference<>(finalRequestBody), progressedRequestBody -> {

@@ -27,9 +27,8 @@ public class OhLoginHandler extends AbstractPathHandler {
             if (act.equals("login")) {
                 try (var httpClient = HttpClient.newHttpClient()) {
                     HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create("https://ottohub.cn/api/user/user_select.php"))
-                            .header("content-type", "multipart/form-data; boundary=---011000010111000001101001")
-                            .method("POST", HttpRequest.BodyPublishers.ofString("-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"action\"\r\n\r\nlogin\r\n-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"uid_email\"\r\n\r\n" + Util.getQueryParam(httpServerRequest.uri(), "un") + "\r\n-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"pw\"\r\n\r\n" + Util.getQueryParam(httpServerRequest.uri(), "pw") + "\r\n-----011000010111000001101001--\r\n\r\n"))
+                            .uri(URI.create("https://api.ottohub.cn/?module=auth&action=login&uid_email="+Util.getQueryParam(httpServerResponse.uri(),"un")+"&pw="+Util.getQueryParam(httpServerResponse.uri(),"pw")))
+                            .method("GET", HttpRequest.BodyPublishers.noBody())
                             .build();
                     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                     JsonObject jsonObject = new JsonObject();
@@ -38,13 +37,20 @@ public class OhLoginHandler extends AbstractPathHandler {
                         jsonObject.addProperty("msg", response.body());
                     } else {
                         jsonObject = JsonParser.parseString(response.body()).getAsJsonObject();
-                        jsonObject.addProperty("PHPSESSID",Util.parseCookies(response).get("PHPSESSID"));
+                        //jsonObject.addProperty("PHPSESSID",Util.parseCookies(response).get("PHPSESSID"));
+                        request = HttpRequest.newBuilder()
+                                .uri(URI.create("https://api.ottohub.cn/?module=profile&action=user_profile&token="+jsonObject.get("token").getAsString()))
+                                .method("GET", HttpRequest.BodyPublishers.noBody())
+                                .build();
+                        response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                        jsonObject.add("profile",JsonParser.parseString(response.body()));
                         webUi.getSessionManage().getUser(httpServerRequest).data.add("ottohub_account", jsonObject);
                         webUi.getSessionManage().getUser(httpServerRequest).markDirty();
                     }
                     stringMonoSink.success(jsonObject.toString());
                 } catch (Exception e) {
                     stringMonoSink.error(e);
+                    e.printStackTrace();
                 }
             } else if (act.equals("logout")) {
                 webUi.getSessionManage().getUser(httpServerRequest).data.remove("ottohub_account");

@@ -10,6 +10,6 @@ public class ConfigCore extends CfgCoreBase {
     }
     @HasName("OTTOHUB转载工具设置")
     public static class Config{
-        public static String upload_backend = "https://ottohub.cn/src/send/php/send_video.php";
+        public static String upload_backend = "https://api.ottohub.cn/module/creator/submit_video.php";
     }
 }

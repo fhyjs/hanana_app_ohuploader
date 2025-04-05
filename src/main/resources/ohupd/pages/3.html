@@ -7,6 +7,12 @@
     <script src="../../webui/assets/sweetalert2.js"></script>
     <script src="../../webui/assets/app.js"></script>
     <script src="../../webui/assets/page.js"></script>
+    <style>
+        .circle {
+            width: 4vh;
+            height: 4vh;
+        }
+    </style>
 </head>
 <body>
     <h1>转载</h1>
@@ -16,6 +22,11 @@
     <input type="text" id="un" placeholder="账号"><br>
     <input type="text" id="pw" placeholder="密码"><br>
     <button id="login">登录</button><button id="logout">退出</button><br>
+    <hr>
+    访问令牌: <span id="token"></span><br>
+    用户名: <span id="username"></span><br>
+    uid: <span id="uid"></span>
+    <img class="circle">
     <script>
         function getQueryParam(key) {
             return new URLSearchParams(window.location.search).get(key);
@@ -25,6 +36,10 @@
             $("h3").text("未登录");
         }else{
             $("h3").text("已经登录");
+            $("#uid").text(oa.uid);
+            $("#username").text(oa.profile.profile.username);
+            $("#token").text(oa.token);
+            $(".circle").attr("src",oa.avatar_url);
         }
 
         $("#login").click(function(){

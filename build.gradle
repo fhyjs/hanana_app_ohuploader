@@ -36,8 +36,8 @@ dependencies {
     implementation 'io.netty:netty-all:4.2.0.RC2'
     implementation 'io.netty.incubator:netty-incubator-codec-http3:0.0.28.Final'
     implementation 'io.projectreactor.netty:reactor-netty:1.2.2'
-    compileOnly "org.eu.hanana.reimu.webui:webui:1.0.6"
-    implementation "org.eu.hanana.reimu.hnn.neoloader:hanana-neoloader:1.0-SNAPSHOT"
+    implementation "org.eu.hanana.reimu.webui:webui:1.0.6"
+    implementation "org.eu.hanana.reimu.hnn.neoloader:neoloader:1.1.2"
     implementation "org.eu.hanana.reimu.hnnapp:app:1.0.1"
     compileOnly "org.eu.hanana.reimu.app.mod.webui:app_webui:1.0.3"
     testImplementation platform('org.junit:junit-bom:5.10.0')
