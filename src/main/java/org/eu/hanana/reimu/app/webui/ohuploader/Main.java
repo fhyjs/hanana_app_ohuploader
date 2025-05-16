@@ -28,5 +28,7 @@ public class Main {
         wui.handlers.add(new DownloadVideoHandler());
         wui.handlers.add(new OhLoginHandler());
         wui.handlers.add(new GetVideoTagsHandler());
+        wui.handlers.add(new PlayUrlInfoHandler());
+        wui.handlers.add(new QuicLoginHandler());
     }
 }

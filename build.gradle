@@ -6,9 +6,6 @@ group = 'org.eu.hanana.reimu.app.webui.ohuploader'
 version = '1.1'
 
 repositories {
-    maven {
-        url 'https://maven.aliyun.com/repository/public/'
-    }
     mavenCentral()
     gradlePluginPortal()
     maven {
@@ -26,6 +23,13 @@ task copyDependencies(type: Copy) {
     into "$buildDir/libs/dependencies"
 }
 dependencies {
+    implementation 'com.nextbreakpoint:com.nextbreakpoint.ffmpeg4java:7.0.1-1.2'
+    implementation 'com.nextbreakpoint:com.nextbreakpoint.ffmpeg4java.windows:7.0.1-1.2'
+    implementation 'com.nextbreakpoint:com.nextbreakpoint.ffmpeg4java.windows:7.0.1-1.2:x86_64'
+    implementation 'com.nextbreakpoint:com.nextbreakpoint.ffmpeg4java.linux:7.0.1-1.2'
+    implementation 'com.nextbreakpoint:com.nextbreakpoint.ffmpeg4java.linux:7.0.1-1.2:x86_64'
+
+
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
 
     implementation 'org.projectlombok:lombok:1.18.30' // 请使用最新版本

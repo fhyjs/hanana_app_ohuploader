@@ -38,6 +38,7 @@ public class GetVideoInfoHandler extends AbstractPathHandler {
                 if (jsonElement.getAsJsonObject().has("data")) {
                     jsonElement.getAsJsonObject().get("data").getAsJsonObject().addProperty("pic", Util.downloadFileToBase64(jsonElement.getAsJsonObject().get("data").getAsJsonObject().get("pic").getAsString()));
                 }
+
                 stringMonoSink.success(jsonElement.toString());
             } catch (Exception e) {
                 stringMonoSink.error(e);

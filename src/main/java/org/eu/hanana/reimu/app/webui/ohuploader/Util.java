@@ -1,16 +1,15 @@
 package org.eu.hanana.reimu.app.webui.ohuploader;
 
+import org.eu.hanana.reimu.app.webui.ohuploader.util.OSType;
 import reactor.netty.http.server.HttpServerResponse;
 
 import java.io.*;
 import java.net.*;
 import java.net.http.HttpResponse;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Util extends org.eu.hanana.reimu.app.mod.webui.Util {
+
     // 添加普通文本字段
     public static void addFormField(PrintWriter writer, String boundary, String name, String value) {
         writer.append("--").append(boundary).append("\r\n");

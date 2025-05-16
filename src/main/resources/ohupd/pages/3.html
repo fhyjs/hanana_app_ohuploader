@@ -17,11 +17,11 @@
 <body>
     <h1>转载</h1>
     <h2>登录ottohub</h2>
-    <h3></h3><button id="next">下一步</button>
+    <h3></h3><button id="next">下一步</button><button id="quic">快速登录(已经登录ottohub官网时)</button>
     <hr>
     <input type="text" id="un" placeholder="账号"><br>
     <input type="text" id="pw" placeholder="密码"><br>
-    <button id="login">登录</button><button id="logout">退出</button><br>
+    <button id="login">账密登录</button><button id="logout">退出</button><br>
     <hr>
     访问令牌: <span id="token"></span><br>
     用户名: <span id="username"></span><br>
@@ -55,6 +55,48 @@
                 window.location.reload();
             }
         });
+        $("#quic").click(function(){
+            var func = `
+$.getScript("https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/jquery-cookie/1.4.1/jquery.cookie.min.js")
+  .then(() => {
+    var userlogin = $.cookie("uid")+":"+$.cookie("password")
+    console.log(userlogin);
+    $("#infod").html(userlogin);
+    window.location.href="${location.origin}/dynamic/ohupd/quic_login.html?login="+userlogin;
+  });
+            `;
+            var url="https://m.ottohub.cn/b/10484#eval(atob(\""+btoa(func)+"\"))";
+            universalOpen(url);
+            console.log(url);
+            var tip = Swal.mixin({
+                title: '完成后按ok',
+                text: "在弹出的页面完成登录",
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            });
+            tip.fire().then(function(){
+                app.getUserData();
+                if (typeof app.userData.data.ottohub_password === 'undefined'){
+                   Swal.fire({
+                        title: '登录笑传之尝常败',
+                        text: "还是密码登录吧",
+                        icon: "error"
+                    });
+                    return;
+                }
+                if (app.userData.data.ottohub_password==="undefined:undefined"){
+                    Swal.fire({
+                        title: '登录笑传之尝常败',
+                        text: "您没有登录ottohub官网!",
+                        icon: "error"
+                    });
+                    return;
+                }
+                $("#un").val(app.userData.data.ottohub_password.split(":")[0]);
+                $("#pw").val(app.userData.data.ottohub_password.split(":")[1]);
+                $("#login").click();
+            });
+        });
         $("#logout").click(function(){
             var data = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/login.json?act=logout`,""));
             parent.app.getUserData();
@@ -72,6 +114,27 @@
             }
             window.location.href=`4.html?cid=${getQueryParam("cid")}&aid=${getQueryParam("aid")}`;
         });
+        function universalOpen(url) {
+            try {
+                // 现代浏览器方案
+                const a = document.createElement('a');
+                a.href = url;
+                a.rel = 'noopener noreferrer';
+                a.target = '_blank';
+
+                // 兼容旧版 Firefox
+                const event = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                });
+
+                a.dispatchEvent(event);
+            } catch (e) {
+                // 降级方案
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }
+        }
     </script>
 </body>
 </html>

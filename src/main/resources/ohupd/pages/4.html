@@ -15,6 +15,9 @@
         <hr>
         <label for="title">标题:</label><input type="text" id="title"><br>
         <label for="desc">简介:</label><br><textarea rows="12" cols="70" id="desc">LOADING...</textarea><br>
+        清晰度:
+        <select id="accept_quality">
+        </select><br>
         封面:<input type="file" id="sel_pic" accept="image/*"><br><img id="pic" alt="pic" style="width: 26vw; height: 15vw overflow-clip-margin: content-box; overflow: clip;"><br>
         标签: <br>
         <div id="tags"></div>
@@ -52,10 +55,18 @@
             return arr;
         }
         var cid = getQueryParam("cid");
+        var qn = getQueryParam("qn");
+        if(qn==null){
+            qn=127;
+        }
         var vdata = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/vidinfo.json?type=av&vid=${getQueryParam("aid")}`,""));
         var tdata = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/vidtags.json?aid=${getQueryParam("aid")}`,""));
+        var udata = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/urlinfo.json?type=av&vid=${getQueryParam("aid")}&cid=${cid}&qn=${qn}`,""));
         var pdata = null;
         var tags = [];
+        udata.data.accept_quality.forEach(function(v,i){
+            $("#accept_quality").append(`<option value="${v}">${udata.data.accept_description[i]}(~${(udata.sizes[v]/1048576).toFixed(2) }MB)</option>`);
+        });
         tdata.data.forEach(function(v,i){
             tags[i]=v.tag_name;
         });
@@ -87,6 +98,11 @@ ${vdata.data.desc}
 `);
             $("#pic").attr("src",vdata.data.pic);
             updateTags();
+            $("#accept_quality").on("change", function() {
+                qn = $(this).val();
+                const selectedText = $(this).find("option:selected").text();
+                console.log(`选中值: ${qn}, 文本: ${selectedText}`);
+            });
         });
         document.getElementById("sel_pic").addEventListener("change", function(event) {
             let file = event.target.files[0];
@@ -159,6 +175,7 @@ ${vdata.data.desc}
                         aid: getQueryParam("aid"),
                         cid: getQueryParam("cid"),
                         pic: base64String,
+                        qn: qn,
                         title: $("#title").val(),
                         desc: $("#desc").val(),
                         right: $("input[name='right']:checked").val(),

@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="MainLegacy" type="Application" factoryName="Application">
-    <option name="ALTERNATIVE_JRE_PATH" value="graalvm-ce-21" />
+    <option name="ALTERNATIVE_JRE_PATH" value="graalvm-23" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
     <option name="MAIN_CLASS_NAME" value="org.eu.hanana.reimu.hnnapp.Main" />
     <module name="hanana_app_ohuploader.main" />

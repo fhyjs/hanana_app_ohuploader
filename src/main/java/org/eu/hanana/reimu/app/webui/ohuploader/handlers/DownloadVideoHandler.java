@@ -37,6 +37,8 @@ import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.eu.hanana.reimu.app.webui.ohuploader.util.SystemInfoGenerator.generateSystemInfo;
+
 public class DownloadVideoHandler extends AbstractPathHandler {
     @Override
     protected String getPath() {
@@ -78,6 +80,7 @@ public class DownloadVideoHandler extends AbstractPathHandler {
         private JsonObject args = null;
         private Runner(WebsocketOutbound outbound, User user){
             this.outbound=outbound;
+            sendOpString("msg",generateSystemInfo().replace("\n","<br/>"));
             outbound.sendString(Mono.just(String.format("{\"op\":\"status\",\"data\":\"waiting\"}"))).then().subscribe();
             outbound.sendString(Mono.just(String.format("{\"op\":\"msg\",\"data\":\"%s\"}","server:等待客户端发送数据"))).then().subscribe();
             sendOpString("start_pre","");
@@ -109,9 +112,11 @@ public class DownloadVideoHandler extends AbstractPathHandler {
                 sendOpString("msg","数据已接收");
                 sendOpString("msg","avid: "+args.get("aid").getAsString());
                 sendOpString("msg","cid: "+args.get("cid").getAsString());
+                sendOpString("msg","清晰度: "+args.get("qn").getAsString());
                 BufferedImage pic = ImageIO.read(new ByteArrayInputStream(Base64.getDecoder().decode(args.get("pic").getAsString().split(",")[1])));
                 var title = args.get("title").getAsString();
                 var desc = args.get("desc").getAsString();
+                var qn = args.get("qn").getAsString();
                 var tags = new HashSet<String>();
                 for (JsonElement jsonElement : args.get("tags").getAsJsonArray()) {
                     tags.add(jsonElement.getAsString());
@@ -149,7 +154,7 @@ public class DownloadVideoHandler extends AbstractPathHandler {
                 long size;
                 try(var httpClient = HttpClient.newHttpClient()){
                     HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create("https://api.bilibili.com/x/player/playurl?cid="+args.get("cid").getAsString()+"&avid="+args.get("aid").getAsString()+"&fnval=1&qn=127"))
+                            .uri(URI.create("https://api.bilibili.com/x/player/playurl?cid="+args.get("cid").getAsString()+"&avid="+args.get("aid").getAsString()+"&fnval=1&qn="+qn))
                             .method("GET", HttpRequest.BodyPublishers.noBody())
                             .build();
                     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
