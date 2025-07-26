@@ -165,7 +165,7 @@ public class DownloadVideoHandler extends AbstractPathHandler {
                 sendOpString("msg",vurl);
                 sendOpString("status", "下载视频");
                 sendOpString("msg", "文件大小: "+size);
-                if (size> 104857600) throw new IllegalStateException("视频大于100MB,请降低清晰度或手动上传");
+                if (size> 104857600 * 2) throw new IllegalStateException("视频大于100MB,请降低清晰度或手动上传");
                 try(var httpClient = HttpClient.newHttpClient()){
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(vurl))
