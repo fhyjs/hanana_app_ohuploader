@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="../../webui/assets/jquery-3.7.1.min.js"></script>
+    <script src="../../webui/assets/sweetalert2.js"></script>
+    <script src="../../webui/assets/app.js"></script>
+    <script src="../../webui/assets/page.js"></script>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        table {
+            border-collapse: collapse; /* 合并边框 */
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        th {
+            background: #f5f5f5;
+        }
+        tr:nth-child(even) {
+            background: #fafafa; /* 隔行换色 */
+        }
+    </style>
+</head>
+<body>
+    <h1>转载</h1>
+    <h2>创建批处理</h2>
+    <hr/>
+    任务列表:
+    <table>
+        <thead>
+        <tr>
+            <th>编号</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="task_table">
+        </tbody>
+    </table>
+    添加:<input type="text" id="ipt_src" placeholder="输入av号或bv号(av.../bv...)"/><label for="ipt_src"> </label>
+    <button id="btn_add">添加</button>
+    <br/>
+    标签过多操作:
+    <label>
+        <input type="radio" name="ipt_tag_max" value="error"> 报错并跳过
+    </label>
+    <label>
+        <input checked="checked" type="radio" name="ipt_tag_max" value="cut"> 保留前10个
+    </label><br>
+    分区(所有视频都是这个分区):
+    <span id="catalogs">
+    </span>
+    <hr/>
+    <button onclick="javascript:doUpload();">提交并执行</button>
+    <script>
+        window.dbg_clear=false;
+        function doUpload(){
+            var $elems = $(".td_target");
+            var targets = [];
+            // 遍历这些元素
+            $elems.each(function(index, elem) {
+                var txt = $(this).text();    // jQuery 封装后
+                targets.push(txt);
+            });
+            const obj = {
+                targets: targets,
+                on_tag_flow: $('input[name="ipt_tag_max"]:checked').val(),
+                catalog: $('input[name="tp"]:checked').val(),
+                debug_clear: window.dbg_clear,
+            };
+
+            // 转成 JSON 字符串
+            const jsonStr = JSON.stringify(obj);
+            var data = $.parseJSON(synchronousPostRequest0(`../../../../data/ohupd/batch_create.json`,jsonStr));
+            if (data.status=="error"){
+                Swal.fire({
+                    title: data.status,
+                    text: data.message,
+                    icon: data.status
+                });
+            }else{
+                Swal.fire({
+                    title: '创建完成',
+                    text: data,
+                    icon: 'success'
+                }).then((result) => {
+                    document.location.href="batch1.html";
+                });
+            }
+        }
+        $(document).ready(function(){
+            var cdata = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/system_config.json`,""));
+            for (const key in cdata.video_catalogs) {
+                if (cdata.video_catalogs.hasOwnProperty(key)) { // 过滤掉原型链上的属性
+                    let val = cdata.video_catalogs[key];
+                    $("#catalogs").append(`<label><input type="radio" name="tp" value="${val}"> ${key}</label>`);
+                }
+            }
+            $("#btn_add").click(function(){
+                var input = $("#ipt_src").val();
+                var i2c = input.substring(0,2).toLocaleLowerCase();
+                if (!i2c.startsWith("av")&&!i2c.startsWith("bv")){
+                    Swal.fire({
+                        title: "错误",
+                        text: "要用av/bv开头",
+                        icon: "error"
+                    });
+                    return;
+                }
+                $("#ipt_src").val("");
+                $("#task_table").append(`<tr class="tr_target_${input}">
+                    <td class="td_target">${input}</td>
+                    <td><button onclick="javascript:$('.tr_target_${input}').remove();">(X)</button></td>
+                </tr>`);
+            });
+        });
+        function synchronousPostRequest0(url, data,type="application/x-www-form-urlencoded",method='POST') {
+            const xhr = new XMLHttpRequest();
+
+            // 设置为同步请求
+            xhr.open(method, url, false); // 第三个参数设为 false 表示同步请求
+
+            // 设置请求头
+            xhr.setRequestHeader("Content-Type", type);
+            if (method==="POST"){
+                // 发送请求并等待响应
+                xhr.send(data.toString()); // 将数据转换为 JSON 字符串
+            }
+
+            // 检查响应状态
+            if (xhr.status === 200) {
+                console.log("响应数据:", xhr.responseText);
+                return xhr.responseText; // 返回响应数据
+            } else {
+                console.error("请求失败，状态码:", xhr.status);
+                return xhr.responseText; // 返回响应数据
+            }
+        }
+    </script>
+</body>
+</html>

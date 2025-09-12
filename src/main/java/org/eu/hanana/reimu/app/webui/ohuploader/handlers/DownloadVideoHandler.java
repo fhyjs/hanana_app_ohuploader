@@ -11,10 +11,13 @@ import org.eu.hanana.reimu.app.webui.ohuploader.Util;
 import org.eu.hanana.reimu.app.webui.ohuploader.config.ConfigCore;
 import org.eu.hanana.reimu.app.webui.ohuploader.util.ProgressedRequestBody;
 import org.eu.hanana.reimu.app.webui.ohuploader.util.TimerLoopThread;
+import org.eu.hanana.reimu.webui.handler.AbstractEasyPathHandler;
 import org.eu.hanana.reimu.webui.handler.AbstractPathHandler;
 import org.eu.hanana.reimu.webui.session.User;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import reactor.netty.http.server.WebsocketServerSpec;
@@ -39,16 +42,26 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.eu.hanana.reimu.app.webui.ohuploader.util.SystemInfoGenerator.generateSystemInfo;
 
-public class DownloadVideoHandler extends AbstractPathHandler {
+public class DownloadVideoHandler extends AbstractEasyPathHandler {
     @Override
     protected String getPath() {
         return "/data/ohupd/do_upload";
     }
 
     @Override
-    public Publisher<Void> handle(HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
-        return httpServerResponse.sendWebsocket((inbound, outbound) -> Mono.create(voidMonoSink -> {
-            final Runner runner = new Runner(outbound,webUi.getSessionManage().getUser(httpServerRequest));
+    public Publisher<Void> process(HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
+        return httpServerResponse.sendWebsocket((inbound, outbound) -> Mono.<Void>create(voidMonoSink -> {
+            final Runner runner = new Runner(new OutCtrl() {
+                @Override
+                public void sendString(String string) {
+                    outbound.sendString(Mono.just(string)).then().subscribe();
+                }
+
+                @Override
+                public void sendClose() {
+                    outbound.sendClose().subscribe();
+                }
+            }, webUi.getSessionManage().getUser(httpServerRequest));
             var tmp = new StringBuilder();
             inbound.receive()  // 获取接收到的帧
                     .map(TextWebSocketFrame::new)
@@ -71,18 +84,24 @@ public class DownloadVideoHandler extends AbstractPathHandler {
                     }).doOnError(throwable -> {
                         throw new RuntimeException(throwable);
                     })
+                    .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();
-        }), WebsocketServerSpec.builder().maxFramePayloadLength(2097152).build());
+        }).subscribeOn(Schedulers.boundedElastic()), WebsocketServerSpec.builder().maxFramePayloadLength(2097152).build());
     }
-    private static class Runner implements Runnable{
-        private final WebsocketOutbound outbound;
+    public interface OutCtrl{
+        void sendString(String string);
+        void sendClose();
+    }
+    public static class Runner implements Runnable{
+        private final OutCtrl outCtrl;
         private final User user;
         private JsonObject args = null;
-        private Runner(WebsocketOutbound outbound, User user){
-            this.outbound=outbound;
+        public Throwable error = null;
+        public Runner(OutCtrl outCtrl, User user){
+            this.outCtrl=outCtrl;
             sendOpString("msg",generateSystemInfo().replace("\n","<br/>"));
-            outbound.sendString(Mono.just(String.format("{\"op\":\"status\",\"data\":\"waiting\"}"))).then().subscribe();
-            outbound.sendString(Mono.just(String.format("{\"op\":\"msg\",\"data\":\"%s\"}","server:等待客户端发送数据"))).then().subscribe();
+            outCtrl.sendString("{\"op\":\"status\",\"data\":\"waiting\"}");
+            outCtrl.sendString(String.format("{\"op\":\"msg\",\"data\":\"%s\"}","server:等待客户端发送数据"));
             sendOpString("start_pre","");
             this.user=user;
         }
@@ -100,7 +119,7 @@ public class DownloadVideoHandler extends AbstractPathHandler {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("op",op);
             jsonObject.addProperty("data",data);
-            outbound.sendString(Mono.just(jsonObject.toString())).then().subscribe();
+            outCtrl.sendString(jsonObject.toString());
         }
 
         @Override
@@ -139,8 +158,8 @@ public class DownloadVideoHandler extends AbstractPathHandler {
                         }
                     }
                 }
-                if (title.length()>=44)throw new IllegalArgumentException("标题太长了");
-                if (desc.length()>=222)throw new IllegalArgumentException("简介太长了");
+                if (title.length()>=ConfigCore.Config.title_length)throw new IllegalArgumentException("标题太长了");
+                if (desc.length()>=ConfigCore.Config.intro_length)throw new IllegalArgumentException("简介太长了");
                 var picImage = new ByteArrayOutputStream();
                 ImageIO.write(pic,"jpg",picImage);
                 if (picImage.size()> 1048576) throw new IllegalArgumentException("封面过大");
@@ -165,7 +184,7 @@ public class DownloadVideoHandler extends AbstractPathHandler {
                 sendOpString("msg",vurl);
                 sendOpString("status", "下载视频");
                 sendOpString("msg", "文件大小: "+size);
-                if (size> 104857600 * 2) throw new IllegalStateException("视频大于100MB,请降低清晰度或手动上传");
+                if (size> 104857600 * 2) throw new IllegalStateException("视频大于200MB,请降低清晰度或手动上传");
                 try(var httpClient = HttpClient.newHttpClient()){
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(vurl))
@@ -266,8 +285,9 @@ public class DownloadVideoHandler extends AbstractPathHandler {
                 sendOpString("error", Base64.getEncoder().encodeToString(e.toString().getBytes(StandardCharsets.UTF_8)));
                 sendOpString("status", "发生错误,按返回上一步调整设置");
                 e.printStackTrace();
+                error=e;
             }finally {
-                outbound.sendClose().subscribe();
+                outCtrl.sendClose();
                 for (File tmpFile : tmpFiles) {
                     if (tmpFile.exists()){
                         tmpFile.delete();

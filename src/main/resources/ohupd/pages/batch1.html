@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../../webui/assets/jquery-3.7.1.min.js"></script>
+    <script src="../../webui/assets/sweetalert2.js"></script>
+    <script src="../../webui/assets/app.js"></script>
+    <script src="../../webui/assets/page.js"></script>
+</head>
+<body>
+    <h1>转载</h1>
+    <h2>批处理监视页面</h2>
+    <h3><a href="batch_create.html">创建新的批处理</a></h3>
+    <hr/>
+    <div id="tableContainer"></div>
+    <script>
+        $(document).ready(function(){
+            var dataArray = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/batch_status.json`,""));
+            dataArray.forEach(item => {
+                // 主表格
+                const $mainTable = $("<table>").attr("border", "1").css({
+                    "border-collapse": "collapse",
+                    "width": "100%",
+                    "margin-bottom": "20px"
+                });
+
+                const headers = ["任务编号","上传者uid", "分区代号", "状态"];
+                const $thead = $("<thead>");
+                const $trHead = $("<tr>");
+                headers.forEach(h => {
+                    $trHead.append($("<th>").text(h).css({"padding":"8px","text-align":"center"}));
+                });
+                $thead.append($trHead);
+                $mainTable.append($thead);
+
+                const $tbody = $("<tbody>");
+                const values = [
+                    dataArray.indexOf(item),
+                    item.owner,
+                    item.catalog,
+                    item.status,
+                ];
+                const $tr = $("<tr>");
+                values.forEach(v => {
+                    $tr.append($("<td>").text(v).css({"padding":"8px","text-align":"center"}));
+                });
+                $tbody.append($tr);
+                $mainTable.append($tbody);
+
+                $("#tableContainer").append($mainTable);
+
+                // 任务子表格
+                item.tasks.forEach(task => {
+                    const $taskTable = $("<table>").attr("border", "1").css({
+                        "border-collapse": "collapse",
+                        "width": "90%",
+                        "margin-bottom": "10px",
+                        "margin-left": "20px"
+                    });
+
+                    const taskHeaders = ["Task Status", "Task Source", "Last Log"];
+                    const $theadTask = $("<thead>");
+                    const $trTaskHead = $("<tr>");
+                    taskHeaders.forEach(h => {
+                        $trTaskHead.append($("<th>").text(h).css({"padding":"6px","text-align":"center"}));
+                    });
+                    $theadTask.append($trTaskHead);
+                    $taskTable.append($theadTask);
+
+                    const $tbodyTask = $("<tbody>");
+                    const lastLog = task.logBuffer && task.logBuffer.length > 0 ? task.logBuffer[task.logBuffer.length - 1] : "";
+                    const $trTask = $("<tr>");
+                    [$trTask.append($("<td>").text(task.status).css({"padding":"6px","text-align":"center"})),
+                        $trTask.append($("<td>").text(task.rawSource).css({"padding":"6px","text-align":"center"})),
+                        $trTask.append($("<td>").text(lastLog).css({"padding":"6px"}))];
+                    $tbodyTask.append($trTask);
+                    $taskTable.append($tbodyTask);
+
+                    $("#tableContainer").append($taskTable);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

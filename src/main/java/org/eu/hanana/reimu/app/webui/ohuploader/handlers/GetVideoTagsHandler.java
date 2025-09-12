@@ -3,6 +3,7 @@ package org.eu.hanana.reimu.app.webui.ohuploader.handlers;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import org.eu.hanana.reimu.app.webui.ohuploader.Util;
+import org.eu.hanana.reimu.webui.handler.AbstractEasyPathHandler;
 import org.eu.hanana.reimu.webui.handler.AbstractPathHandler;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -14,7 +15,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-public class GetVideoTagsHandler extends AbstractPathHandler {
+public class GetVideoTagsHandler extends AbstractEasyPathHandler {
 
     @Override
     protected String getPath() {
@@ -22,7 +23,7 @@ public class GetVideoTagsHandler extends AbstractPathHandler {
     }
 
     @Override
-    public Publisher<Void> handle(HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
+    public Publisher<Void> process(HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
         return Util.autoContentType(httpServerResponse).sendString(Mono.create(stringMonoSink -> {
             try (HttpClient httpClient = HttpClient.newHttpClient()){
                 HttpRequest request = HttpRequest.newBuilder()

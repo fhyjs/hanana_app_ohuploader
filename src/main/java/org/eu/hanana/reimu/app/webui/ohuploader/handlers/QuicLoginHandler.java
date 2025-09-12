@@ -1,6 +1,7 @@
 package org.eu.hanana.reimu.app.webui.ohuploader.handlers;
 
 import org.eu.hanana.reimu.app.webui.ohuploader.Util;
+import org.eu.hanana.reimu.webui.handler.AbstractEasyPathHandler;
 import org.eu.hanana.reimu.webui.handler.AbstractPathHandler;
 import org.eu.hanana.reimu.webui.session.User;
 import org.reactivestreams.Publisher;
@@ -13,7 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-public class QuicLoginHandler extends AbstractPathHandler {
+public class QuicLoginHandler extends AbstractEasyPathHandler {
 
     @Override
     protected String getPath() {
@@ -21,7 +22,7 @@ public class QuicLoginHandler extends AbstractPathHandler {
     }
 
     @Override
-    public Publisher<Void> handle(HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
+    public Publisher<Void> process(HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
         return Util.autoContentType(httpServerResponse).sendString(Mono.create(stringMonoSink -> {
             String login = Util.getQueryParam(httpServerRequest.uri(), "login");
             User user = webUi.getSessionManage().getUser(httpServerRequest);

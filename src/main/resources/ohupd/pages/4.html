@@ -13,8 +13,8 @@
     <div id="main">
         <h2>视频信息</h2>
         <hr>
-        <label for="title">标题:</label><input type="text" id="title"><br>
-        <label for="desc">简介:</label><br><textarea rows="12" cols="70" id="desc">LOADING...</textarea><br>
+        <label for="title">标题:</label><input type="text" id="title"><span id="title_length"></span><br>
+        <label for="desc">简介:<span id="intro_length"></span></label><br><textarea rows="12" cols="70" id="desc">LOADING...</textarea><br>
         清晰度:
         <select id="accept_quality">
         </select><br>
@@ -27,16 +27,12 @@
         <label><input type="radio" name="right" value="2"> 自制</label>
         <label><input type="radio" name="right" value="3"> 其他</label><br>
         分区:
-        <label><input type="radio" name="tp" value="1"> 鬼畜</label>
-        <label><input type="radio" name="tp" value="2"> 音骂</label>
-        <label><input type="radio" name="tp" value="3"> 人力</label>
-        <label><input type="radio" name="tp" value="4"> 剧场</label>
-        <label><input type="radio" name="tp" value="5"> 游戏</label>
-        <label><input type="radio" name="tp" value="6"> 怀旧</label>
-        <label><input type="radio" name="tp" value="7"> 音乐</label>
-        <label><input type="radio" name="tp" value="0"> 其他</label>
+        <span id="catalogs">
+        </span>
         <hr>
         <button id="next">下一步</button>
+        <hr/>
+        <a href="https://m.ottohub.cn/b/8263" target="_blank">Oh shit! 我需要帮助!</a>
     </div>
     <div id="progress" style="display: none;">
         <h2>运行日志</h2>
@@ -63,6 +59,7 @@
         var vdata = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/vidinfo.json?type=av&vid=${getQueryParam("aid")}`,""));
         var tdata = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/vidtags.json?aid=${getQueryParam("aid")}`,""));
         var udata = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/urlinfo.json?type=av&vid=${getQueryParam("aid")}&cid=${cid}&qn=${qn}`,""));
+        var cdata = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/system_config.json`,""));
         var pdata = null;
         var tags = [];
         udata.data.accept_quality.forEach(function(v,i){
@@ -76,6 +73,12 @@
                 pdata=v;
             }
         });
+        for (const key in cdata.video_catalogs) {
+            if (cdata.video_catalogs.hasOwnProperty(key)) { // 过滤掉原型链上的属性
+                let val = cdata.video_catalogs[key];
+                $("#catalogs").append(`<label><input type="radio" name="tp" value="${val}"> ${key}</label>`);
+            }
+        }
         console.log(pdata);
         $(document).ready(function(){
             if (pdata==null){
@@ -91,12 +94,20 @@
             }else{
                 $("#title").val(pdata.part);
             }
+            $("#title").on("input", function() {
+                $("#title_length").html($("#title").val().length+"/"+cdata.title_length);
+            });
+            $("#title_length").html($("#title").val().length+"/"+cdata.title_length);
             $("#desc").val(`转载bilbili: AV${vdata.data.aid}
 up主: ${vdata.data.owner.name}
 转载工具(https://5160.hanana2.link:2053/static/cp/webui/index.html?act=ohupd)
 原视频简介:
 ${vdata.data.desc}
 `);
+            $("#desc").on("input", function() {
+                $("#intro_length").html($("#desc").val().length+"/"+cdata.intro_length);
+            });
+            $("#intro_length").html($("#desc").val().length+"/"+cdata.intro_length);
             $("#pic").attr("src",vdata.data.pic);
             updateTags();
             $("#accept_quality").on("change", function() {

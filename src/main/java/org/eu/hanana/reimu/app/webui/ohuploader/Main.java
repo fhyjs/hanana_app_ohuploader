@@ -30,5 +30,8 @@ public class Main {
         wui.handlers.add(new GetVideoTagsHandler());
         wui.handlers.add(new PlayUrlInfoHandler());
         wui.handlers.add(new QuicLoginHandler());
+        wui.handlers.add(new GetSystemConfigHandler());
+        wui.handlers.add(new GetBatchStatusHandler());
+        wui.handlers.add(new CreateBatchHandler());
     }
 }
