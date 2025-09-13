@@ -8,14 +8,23 @@ public class TimerLoopThread<T> extends Thread{
     protected AtomicReference<T> value;
     protected Function<T,Boolean> func;
     protected long miles;
+    protected boolean working=true;
     public TimerLoopThread(AtomicReference<T> value, Function<T,Boolean> func, long miles){
         this.value=value;
         this.func=func;
         this.miles=miles;
     }
+
+    @Override
+    public void interrupt() {
+        super.interrupt();
+        working=false;
+    }
+
     @Override
     public void run() {
-        while (!Thread.currentThread().isInterrupted()){
+        working=true;
+        while (!Thread.currentThread().isInterrupted()&&working){
             try {
                 Thread.sleep(miles);
             } catch (InterruptedException ignored) {

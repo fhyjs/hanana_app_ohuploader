@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../../webui/assets/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+    <h1>转载</h1>
+    <h2>登录bilibili</h2>
+    <hr/>
+    <a href="bili_login_qr.html">扫码登录</a><br/>
+    <a href="bili_login_pw.html">密码登录</a><br/>
+    <script>
+        $("a").each(function() {
+            const $this = $(this);
+            let href = $this.attr("href") || "";
+
+            // 避免重复添加 ?href=
+            if (!href.includes("href=")) {
+                const separator = href.includes("?") ? "&" : "?"; // 判断已有查询参数
+                $this.attr("href", href + separator + "href=" + encodeURIComponent(getQueryParam("href")));
+            }
+        });
+        function getQueryParam(key) {
+            return new URLSearchParams(window.location.search).get(key);
+        }
+    </script>
+</body>
+</html>

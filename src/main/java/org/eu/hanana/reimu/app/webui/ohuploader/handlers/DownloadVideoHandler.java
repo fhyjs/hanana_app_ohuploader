@@ -9,6 +9,8 @@ import okhttp3.*;
 import org.apache.logging.log4j.LogManager;
 import org.eu.hanana.reimu.app.webui.ohuploader.Util;
 import org.eu.hanana.reimu.app.webui.ohuploader.config.ConfigCore;
+import org.eu.hanana.reimu.app.webui.ohuploader.util.BiliPlaybackData;
+import org.eu.hanana.reimu.app.webui.ohuploader.util.BiliPlaybackUtil;
 import org.eu.hanana.reimu.app.webui.ohuploader.util.ProgressedRequestBody;
 import org.eu.hanana.reimu.app.webui.ohuploader.util.TimerLoopThread;
 import org.eu.hanana.reimu.webui.handler.AbstractEasyPathHandler;
@@ -22,6 +24,7 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import reactor.netty.http.server.WebsocketServerSpec;
 import reactor.netty.http.websocket.WebsocketOutbound;
+import reactor.util.function.Tuple2;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -34,11 +37,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.eu.hanana.reimu.app.webui.ohuploader.util.SystemInfoGenerator.generateSystemInfo;
 
@@ -141,6 +144,10 @@ public class DownloadVideoHandler extends AbstractEasyPathHandler {
                 var title = args.get("title").getAsString();
                 var desc = args.get("desc").getAsString();
                 var qn = args.get("qn").getAsString();
+                var sessData = "";
+                if (user.data.has("bilibili_sess")){
+                    sessData=user.data.get("bilibili_sess").getAsString();
+                }
                 var tags = new HashSet<String>();
                 for (JsonElement jsonElement : args.get("tags").getAsJsonArray()) {
                     tags.add(jsonElement.getAsString());
@@ -175,60 +182,101 @@ public class DownloadVideoHandler extends AbstractEasyPathHandler {
                 var type = String.valueOf(args.get("type").getAsInt());
                 sendOpString("msg","获取视频元数据...");
                 String vurl;
+                String aurl;
                 long size;
+                BiliPlaybackData playbackData;
+                var login=!sessData.isEmpty();
                 try(var httpClient = HttpClient.newHttpClient()){
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create("https://api.bilibili.com/x/player/playurl?cid="+args.get("cid").getAsString()+"&avid="+args.get("aid").getAsString()+"&fnval=1&qn="+qn))
-                            .method("GET", HttpRequest.BodyPublishers.noBody())
-                            .build();
-                    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                    JsonObject asJsonObject = JsonParser.parseString(response.body()).getAsJsonObject();
-                    vurl = asJsonObject.get("data").getAsJsonObject().get("durl").getAsJsonArray().get(0).getAsJsonObject().get("url").getAsString();
-                    size = asJsonObject.get("data").getAsJsonObject().get("durl").getAsJsonArray().get(0).getAsJsonObject().get("size").getAsBigInteger().longValue();
+//                    HttpRequest request = HttpRequest.newBuilder()
+//                            .uri(URI.create("https://api.bilibili.com/x/player/playurl?cid="+args.get("cid").getAsString()+"&avid="+args.get("aid").getAsString()+"&fnval=1&qn="+qn))
+//                            .method("GET", HttpRequest.BodyPublishers.noBody())
+//                            .build();
+//                    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+//                    JsonObject asJsonObject = JsonParser.parseString(response.body()).getAsJsonObject();
+//                    vurl = asJsonObject.get("data").getAsJsonObject().get("durl").getAsJsonArray().get(0).getAsJsonObject().get("url").getAsString();
+//                    size = asJsonObject.get("data").getAsJsonObject().get("durl").getAsJsonArray().get(0).getAsJsonObject().get("size").getAsBigInteger().longValue();
+                    Tuple2<String, List<BiliPlaybackData>> data;
+                    if (login){
+                        data=BiliPlaybackUtil.getDashPlaybackData(httpClient,sessData,"avid",args.get("aid").getAsString(),args.get("cid").getAsString());
+                    }else {
+                        data=BiliPlaybackUtil.getMp4PlaybackData(httpClient,"avid",args.get("aid").getAsString(),args.get("cid").getAsString());
+                    }
+                    Map<String,BiliPlaybackData> playbackDataMap = data.getT2().stream()
+                            .collect(Collectors.collectingAndThen(
+                                Collectors.toMap(u -> u.qn, u -> u, (a, b) -> a), // 如果重复取第一个
+                                m -> m.values().stream()
+                             )).collect(Collectors.toMap(biliPlaybackData -> String.valueOf(biliPlaybackData.qn),biliPlaybackData -> biliPlaybackData));
+                    if (playbackDataMap.containsKey(qn)){
+                        playbackData=playbackDataMap.get(qn);
+                    }else {
+                        var lQn = 0;
+                        for (String s : playbackDataMap.keySet()) {
+                            lQn=Math.max(Integer.parseInt(s),lQn);
+                        }
+                        playbackData=playbackDataMap.get(String.valueOf(lQn));
+                    }
+                    sendOpString("msg","最终命中清晰度: "+playbackData.qn);
+                    aurl= playbackData.audioUrl;
+                    vurl= playbackData.videoUrl;
+                    size= playbackData.size;
                 }
+
+                Tuple2<String, List<BiliPlaybackData>> data;
+
                 sendOpString("msg",vurl);
                 sendOpString("status", "下载视频");
-                sendOpString("msg", "文件大小: "+size);
                 if (size> 104857600 * 2) throw new IllegalStateException("视频大于200MB,请降低清晰度或手动上传");
                 try(var httpClient = HttpClient.newHttpClient()){
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(vurl))
-                            .method("GET", HttpRequest.BodyPublishers.noBody())
-                            .header("referer","https://www.bilibili.com/")
-                            .header("origin","https://www.bilibili.com")
-                            .header("user-agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")
-                            .build();
-                    HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-                    // 获取文件总大小（如果服务器支持）
-                    // 可能返回 -1，表示未知大小
                     var dir= new File("tmp/ohupd");
                     if (!dir.exists()) dir.mkdirs();
-                    var file = new File(dir, Util.generateRandomString(10)+".mp4");
-                    tmpFiles.add(file);
-                    try (InputStream inputStream = response.body();
-                         FileOutputStream outputStream = new FileOutputStream(file)) {
 
-                        byte[] buffer = new byte[524288]; // 8KB 缓冲区
-                        long downloaded = 0;
-                        int bytesRead;
-                        long startTime = System.currentTimeMillis();
-                        var progress = new AtomicReference<>(0d);
-                        Thread listener = new TimerLoopThread<>(progress, pg -> {
-                            sendOpString("progress", String.valueOf(pg*100));
-                            return pg >= 1d;
-                        }, 100);
-                        listener.start();
-                        while ((bytesRead = inputStream.read(buffer)) != -1) {
-                            outputStream.write(buffer, 0, bytesRead);
-                            downloaded += bytesRead;
+                    var fileV = new File(dir, Util.generateRandomString(10)+(playbackData.isDash?".m4s":".mp4"));
+                    tmpFiles.add(fileV);
+                    dlFile(vurl,httpClient,fileV,size);
+                    var outFile = Util.generateRandomString(10)+".mp4";
+                    tmpFiles.add(new File(dir,outFile));
+                    if (playbackData.isDash) {
+                        sendOpString("msg","哇袄！这是DASH格式视频！！需要进行神秘操作！先来ccb吧");
+                        var fileA = new File(dir, Util.generateRandomString(10) + ".m4s");
+                        tmpFiles.add(fileA);
+                        dlFile(aurl,httpClient,fileA,playbackData.sizeA);
 
-                            // 计算进度
-                            progress.set((downloaded * 1d) / size);
+                        // 构建命令
+                        String[] command = {
+                                ConfigCore.Config.ffmpeg,
+                                "-i", fileA.getName(),
+                                "-i", fileV.getName(),
+                                "-c:v", "copy",
+                                "-c:a", "copy",
+                                "-f", "mp4",
+                                outFile
+                        };
+
+                        ProcessBuilder pb = new ProcessBuilder(command);
+                        pb.directory(dir); // 设置运行目录
+                        pb.redirectErrorStream(true); // 合并 stderr 到 stdout
+
+                        try {
+                            Process process = pb.start();
+                            // 异步线程读取输出
+                            new Thread(() -> {
+                                try (BufferedReader reader = new BufferedReader(
+                                        new InputStreamReader(process.getInputStream()))) {
+                                    String line;
+                                    while ((line = reader.readLine()) != null) {
+                                        sendOpString("msg","[ffmpeg] " + line);
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }).start();
+                            int exitCode = process.waitFor(); // 等待执行完成
+                            sendOpString("msg","ffmpeg 执行结束，退出码: " + exitCode);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
                         }
-                        listener.interrupt();
-                        long totalTime = System.currentTimeMillis() - startTime;
-                        sendOpString("msg", "下载完成,用时(ms): "+totalTime);
                     }
+
                     sendOpString("status", "上传中");
                     sendOpString("msg", "开始上传");
                     sendOpString("msg", "远程地址: "+ConfigCore.Config.upload_backend);
@@ -251,7 +299,7 @@ public class DownloadVideoHandler extends AbstractEasyPathHandler {
                             .addFormDataPart("category", type)
                             .addFormDataPart("tag", tagstr.toString());
                     multipartBuilder.addFormDataPart("file_jpg", Util.generateRandomString(10)+".jpg", RequestBody.create(picImage.toByteArray(), MediaType.get("image/jpeg")));
-                    multipartBuilder.addFormDataPart("file_mp4", Util.generateRandomString(10)+".mp4", RequestBody.create(file, MediaType.get("video/mp4")));
+                    multipartBuilder.addFormDataPart("file_mp4", Util.generateRandomString(10)+".mp4", RequestBody.create((playbackData.isDash?new File(dir,outFile):fileV), MediaType.get("video/mp4")));
 
                     RequestBody requestBody = multipartBuilder.build();
                     ProgressedRequestBody requestBody1 = null;
@@ -274,7 +322,7 @@ public class DownloadVideoHandler extends AbstractEasyPathHandler {
                         listener.interrupt();
                         if (okHresponse.isSuccessful()) {
                             String string = okHresponse.body().string();
-                            sendOpString("msg",string);
+                            sendOpString("msg","<font color='red'>"+string+"</font>");
                             if (!string.contains("success")){
                                 throw new IllegalStateException("远程返回: "+string);
                             }else {
@@ -283,6 +331,8 @@ public class DownloadVideoHandler extends AbstractEasyPathHandler {
                         } else {
                             System.out.println("Request failed: " + okHresponse.message());
                         }
+                    }finally {
+                        listener.interrupt();
                     }
                 }
 
@@ -297,6 +347,49 @@ public class DownloadVideoHandler extends AbstractEasyPathHandler {
                     if (tmpFile.exists()){
                         tmpFile.delete();
                     }
+                }
+            }
+        }
+
+        private void dlFile(String vurl,HttpClient httpClient,File file,long size) throws IOException, InterruptedException {
+            sendOpString("msg", file+"文件大小: "+size);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(vurl))
+                    .method("GET", HttpRequest.BodyPublishers.noBody())
+                    .header("referer","https://www.bilibili.com/")
+                    .header("origin","https://www.bilibili.com")
+                    .header("user-agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")
+                    .build();
+            HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            // 获取文件总大小（如果服务器支持）
+            // 可能返回 -1，表示未知大小
+            Thread listener=null;
+            try (InputStream inputStream = response.body();
+                 FileOutputStream outputStream = new FileOutputStream(file)) {
+
+                byte[] buffer = new byte[524288]; // 8KB 缓冲区
+                long downloaded = 0;
+                int bytesRead;
+                long startTime = System.currentTimeMillis();
+                var progress = new AtomicReference<>(0d);
+                listener = new TimerLoopThread<>(progress, pg -> {
+                    sendOpString("progress", String.valueOf(pg*100));
+                    return pg >= 1d;
+                }, 200);
+                listener.start();
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                    downloaded += bytesRead;
+
+                    // 计算进度
+                    progress.set((downloaded * 1d) / size);
+                }
+                listener.interrupt();
+                long totalTime = System.currentTimeMillis() - startTime;
+                sendOpString("msg", "下载完成,用时(ms): "+totalTime);
+            }finally {
+                if (listener != null) {
+                    listener.interrupt();
                 }
             }
         }

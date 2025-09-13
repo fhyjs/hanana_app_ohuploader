@@ -13,6 +13,7 @@ public class ConfigCore extends CfgCoreBase {
     @HasName("OTTOHUB转载工具设置")
     public static class Config{
         public static String upload_backend = "https://api.ottohub.cn/module/creator/submit_video.php";
+        public static String ffmpeg = "ffmpeg";
         public static int title_length = 44;
         public static int intro_length = 222;
         public static Map<String,Integer> video_catalogs = Map.of(

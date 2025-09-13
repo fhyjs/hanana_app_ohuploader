@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../../webui/assets/jquery-3.7.1.min.js"></script>
+    <script src="../../webui/assets/sweetalert2.js"></script>
+    <script src="../../webui/assets/app.js"></script>
+    <script src="../../webui/assets/page.js"></script>
+    <script src="../assets/bili_util.js"></script>
+    <script src="../assets/qrcode.min.js"></script>
+</head>
+<body>
+    <h1>转载</h1>
+    <h2>扫码登录bilibili</h2>
+    <hr/>
+    <h4 id="msg_txt">加载二维码...</h4>
+    <div id="qr"></div>
+    <script>
+        function doLogin(data){
+            $("#msg_txt").html("登录保存中...");
+            synchronousPostRequest(`../../../../data/ohupd/bili/save_login.php`,getCookieValue(data.head,"SESSDATA"));
+            parent.app.getUserData();
+            window.location.href=getQueryParam("href");
+        }
+        $(document).ready(function(){
+            var data = bili_get("https://passport.bilibili.com/x/passport-login/web/qrcode/generate","https://www.bilibili.com/");
+            check_error(data);
+            var key = data.body.data.qrcode_key;
+            new QRCode(document.getElementById("qr"), {
+                text: data.body.data.url,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H // 纠错等级
+            });
+            var intervalId = 0;
+            // 每 0.5 秒执行一次
+            intervalId = setInterval(function () {
+                var data1 = bili_get("https://passport.bilibili.com/x/passport-login/web/qrcode/poll?qrcode_key="+key,"https://www.bilibili.com/");
+                check_error(data1);
+                $("#msg_txt").html(data1.body.data.message);
+                if (data1.body.data.code!=0){
+                }else{
+                    clearTimeout(intervalId);
+                    doLogin(data1);
+                }
+            }, 1400); // 500 毫秒 = 0.5 秒
+        });
+        function getQueryParam(key) {
+            return new URLSearchParams(window.location.search).get(key);
+        }
+    </script>
+</body>
+</html>

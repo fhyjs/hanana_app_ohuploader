@@ -17,7 +17,7 @@
         <label for="desc">简介:<span id="intro_length"></span></label><br><textarea rows="12" cols="70" id="desc">LOADING...</textarea><br>
         清晰度:
         <select id="accept_quality">
-        </select><br>
+        </select>(登录更高清)<br>
         封面:<input type="file" id="sel_pic" accept="image/*"><br><img id="pic" alt="pic" style="width: 26vw; height: 15vw overflow-clip-margin: content-box; overflow: clip;"><br>
         标签: <br>
         <div id="tags"></div>
@@ -63,7 +63,9 @@
         var pdata = null;
         var tags = [];
         udata.data.accept_quality.forEach(function(v,i){
-            $("#accept_quality").append(`<option value="${v}">${udata.data.accept_description[i]}(~${(udata.sizes[v]/1048576).toFixed(2) }MB)</option>`);
+            if(udata.sizes[v]!=-1){
+                $("#accept_quality").append(`<option value="${v}">${udata.data.accept_description[i]}(~${(udata.sizes[v]/1048576).toFixed(2) }MB)</option>`);
+            }
         });
         tdata.data.forEach(function(v,i){
             tags[i]=v.tag_name;

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../../webui/assets/jquery-3.7.1.min.js"></script>
+    <script src="../../webui/assets/sweetalert2.js"></script>
+    <script src="../../webui/assets/app.js"></script>
+    <script src="../../webui/assets/page.js"></script>
+    <script src="../assets/bili_util.js"></script>
+    <script src="../assets/gt.0.4.9.js"></script>
+</head>
+<body>
+<h1>转载</h1>
+<h2>密码登录bilibili</h2>
+<hr/>
+<h4 id="msg_txt">加载验证码...</h4>
+<div id="gtc"></div>
+<div style="display:none;" id="data"></div>
+<div id="login_ui">
+    <label for="username">用户名</label><input type="text" id="username" placeholder="用户名" required><br/>
+    <label for="password">密码</label><input type="password" id="password" placeholder="密码" required><br/>
+    <button onclick="login();" type="submit">登录</button>
+</div>
+<script>
+    function doBuild(key,challenge,validate,seccode){
+
+        let user = {
+            key :key,
+            validate :validate,
+            seccode :seccode,
+            challenge:challenge
+        };
+
+        // 转换为 JSON 字符串
+        let jsonStr = JSON.stringify(user);
+        $("#data").html(jsonStr);
+        $("#login_ui").show();
+    }
+    function login(data){
+        var un = $("#username").val();
+        var pw = $("#password").val();
+        var data = bili_get("https://passport.bilibili.com/x/passport-login/web/key","https://www.bilibili.com/");
+        var hash = data.body.data.hash;
+        var key = data.body.data.key;
+        check_error(data);
+        pw=hash+pw;
+        console.log(pw);
+        // 获取 #data 的内容
+        let jsonStrRead = $("#data").html();
+
+        // 解析回对象
+        let userRead = JSON.parse(jsonStrRead);
+        let user = {
+            username :un,
+            password :pw,
+            key :key,
+            token :userRead.key,
+            validate :userRead.validate,
+            seccode :userRead.seccode,
+            challenge:userRead.challenge
+        };
+        let jsonStr = JSON.stringify(user);
+        var data = $.parseJSON(synchronousPostRequest(`../../../../data/ohupd/bili/pw_login.json`,jsonStr));
+        data.body=$.parseJSON(data.body);
+        check_error(data);
+        if (data.body.data.status!=0){
+            Swal.fire({
+                title: 'error'+data.body.data.status,
+                text: data.body.data.message,
+                icon: "error"
+            });
+            return;
+        }
+        doLogin(data);
+    }
+    function doLogin(data){
+        $("#msg_txt").html("登录保存中...");
+        synchronousPostRequest(`../../../../data/ohupd/bili/save_login.php`,getCookieValue(data.head,"SESSDATA"));
+        check_error(data);
+        parent.app.getUserData();
+        window.location.href=getQueryParam("href");
+    }
+    $(document).ready(function(){
+        $("#login_ui").hide();
+        var data = bili_get("https://passport.bilibili.com/x/passport-login/captcha?source=main_web","https://www.bilibili.com/");
+        check_error(data);
+        initGeetest({
+            // 以下配置参数来自服务端 SDK
+            gt: data.body.data.geetest.gt,
+            challenge: data.body.data.geetest.challenge,
+            offline: false,
+            new_captcha: true,
+        }, function (captchaObj) {
+            // 这里可以调用验证实例 captchaObj 的实例方法
+            captchaObj.appendTo('#gtc');
+            captchaObj.onError(function (error) {
+                alert(error+"出错了，点击左侧刷新页面试试^_^");
+            });
+            captchaObj.onReady(function () {
+                // DOM 准备好后，隐藏tip 元素
+                $("#msg_txt").html("请登录");
+            });
+            captchaObj.onSuccess(function () {
+                var result = captchaObj.getValidate();
+                doBuild(data.body.data.token, data.body.data.geetest.challenge,result.geetest_validate,result.geetest_seccode);
+            });
+        });
+    });
+    function getQueryParam(key) {
+        return new URLSearchParams(window.location.search).get(key);
+    }
+</script>
+</body>
+</html>

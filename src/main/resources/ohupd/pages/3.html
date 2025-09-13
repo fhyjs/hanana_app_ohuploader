@@ -142,5 +142,30 @@ $.getScript("https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.
             }
         }
     </script>
+    <hr/>
+    <h2>登录BILIBILI(下载高画质视频,不登录最高720p)</h2>
+    <h4><a id="login_bili" href="bili_login.html">点击登录</a><button id="logout_b">退出</button></h4>
+    <hr>
+    访问令牌: <span id="token_bili"></span><br>
+    <script>
+        $("#logout_b").click(function(){
+            synchronousPostRequest(`../../../../data/ohupd/bili/save_login.php`,"");
+            parent.app.getUserData();
+            window.location.reload();
+
+        });
+        var ba = app.userData.data.bilibili_sess;
+        $("#token_bili").text(ba);
+        $("a").each(function() {
+            const $this = $(this);
+            let href = $this.attr("href") || "";
+
+            // 避免重复添加 ?href=
+            if (!href.includes("href=")) {
+                const separator = href.includes("?") ? "&" : "?"; // 判断已有查询参数
+                $this.attr("href", href + separator + "href=" + encodeURIComponent(window.location.href));
+            }
+        });
+    </script>
 </body>
 </html>

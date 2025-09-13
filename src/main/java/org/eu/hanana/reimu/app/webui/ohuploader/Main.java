@@ -3,6 +3,9 @@ package org.eu.hanana.reimu.app.webui.ohuploader;
 import org.eu.hanana.reimu.app.mod.webui.event.WebUiCreatedEvent;
 import org.eu.hanana.reimu.app.webui.ohuploader.config.ConfigCore;
 import org.eu.hanana.reimu.app.webui.ohuploader.handlers.*;
+import org.eu.hanana.reimu.app.webui.ohuploader.handlers.bili.BiliPasswordLoginHandler;
+import org.eu.hanana.reimu.app.webui.ohuploader.handlers.bili.BiliProxyHandler;
+import org.eu.hanana.reimu.app.webui.ohuploader.handlers.bili.BiliSaveLoginHandler;
 import org.eu.hanana.reimu.hnnapp.ModLoader;
 import org.eu.hanana.reimu.hnnapp.mods.Event;
 import org.eu.hanana.reimu.hnnapp.mods.ModEntry;
@@ -33,5 +36,9 @@ public class Main {
         wui.handlers.add(new GetSystemConfigHandler());
         wui.handlers.add(new GetBatchStatusHandler());
         wui.handlers.add(new CreateBatchHandler());
+        //bili
+        wui.handlers.add(new BiliProxyHandler());
+        wui.handlers.add(new BiliSaveLoginHandler());
+        wui.handlers.add(new BiliPasswordLoginHandler());
     }
 }
