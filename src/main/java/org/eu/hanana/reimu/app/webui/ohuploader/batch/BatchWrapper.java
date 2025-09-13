@@ -43,12 +43,9 @@ public class BatchWrapper {
             }
             status=BatchStatus.FINISH;
         });
-        thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                e.printStackTrace();
-                status=BatchStatus.ERROR;
-            }
+        thread.setUncaughtExceptionHandler((t, e) -> {
+            e.printStackTrace();
+            status=BatchStatus.ERROR;
         });
         thread.start();
     }
@@ -87,6 +84,7 @@ public class BatchWrapper {
         }
     }
     protected void startTask(BatchTask task) {
+        task.status=BatchStatus.WORKING;
         var uid = user.data.get("ottohub_account").getAsJsonObject().get("uid").getAsInt();
         var type = task.rawSource.substring(0,2);
         var vid = task.rawSource.substring(2);
@@ -140,7 +138,7 @@ public class BatchWrapper {
         JsonObject dataPending = new JsonObject();
         dataPending.addProperty("op","start");
         dataPending.add("data",coreData);
-        runner.input(dataPending);
+        runner.input(dataPending,false);
         runner.run();
         if (runner.error!=null){
             task.status=BatchStatus.ERROR;

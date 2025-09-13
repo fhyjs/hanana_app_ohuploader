@@ -25,7 +25,7 @@
                     "margin-bottom": "20px"
                 });
 
-                const headers = ["任务编号","上传者uid", "分区代号", "状态"];
+                const headers = ["批处理编号","上传者uid", "分区代号", "状态"];
                 const $thead = $("<thead>");
                 const $trHead = $("<tr>");
                 headers.forEach(h => {
@@ -59,7 +59,7 @@
                         "margin-left": "20px"
                     });
 
-                    const taskHeaders = ["Task Status", "Task Source", "Last Log"];
+                    const taskHeaders = ["任务编号","任务状态", "任务原", "最后日志"];
                     const $theadTask = $("<thead>");
                     const $trTaskHead = $("<tr>");
                     taskHeaders.forEach(h => {
@@ -71,9 +71,12 @@
                     const $tbodyTask = $("<tbody>");
                     const lastLog = task.logBuffer && task.logBuffer.length > 0 ? task.logBuffer[task.logBuffer.length - 1] : "";
                     const $trTask = $("<tr>");
-                    [$trTask.append($("<td>").text(task.status).css({"padding":"6px","text-align":"center"})),
+                    [
+                        $trTask.append($("<td>").text(item.tasks.indexOf(task)).css({"padding":"6px","text-align":"center"})),
+                        $trTask.append($("<td>").text(task.status).css({"padding":"6px","text-align":"center"})),
                         $trTask.append($("<td>").text(task.rawSource).css({"padding":"6px","text-align":"center"})),
-                        $trTask.append($("<td>").text(lastLog).css({"padding":"6px"}))];
+                        $trTask.append($("<td>").text(lastLog).css({"padding":"6px"}))
+                    ];
                     $tbodyTask.append($trTask);
                     $taskTable.append($tbodyTask);
 

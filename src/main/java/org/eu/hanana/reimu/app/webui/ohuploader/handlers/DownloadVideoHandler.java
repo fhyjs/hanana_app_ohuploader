@@ -107,12 +107,17 @@ public class DownloadVideoHandler extends AbstractEasyPathHandler {
         }
 
         public void input(JsonElement jsonElement) {
+            this.input(jsonElement,true);
+        }
+        public void input(JsonElement jsonElement,boolean run) {
             var jo = jsonElement.getAsJsonObject();
             var op = jo.get("op").getAsString();
             if (op.equals("start")){
                 if (args!=null) return;
                 args=jo.get("data").getAsJsonObject();
-                new Thread(this).start();
+                if (run) {
+                    new Thread(this).start();
+                }
             }
         }
         protected void sendOpString(String op,String data){
